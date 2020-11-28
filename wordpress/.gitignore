@@ -1,0 +1,11 @@
+/app/assets/*
+/app/plugins/*
+/index.php
+/license.txt
+/readme.html
+/robots.txt
+/wp-*
+!/wp-config.php
+/wp-admin
+/wp-includes
+/xmlrpc.php
