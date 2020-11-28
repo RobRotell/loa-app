@@ -1,0 +1,34 @@
+@mixin btnGreen {
+    background-color: $greenDark;
+    transition: background-color .2s;
+
+    &:hover {
+        background-color: $greenLight;
+    }
+}
+
+
+@mixin transitionSimple {
+    transition: all .2s;
+}
+
+@mixin flex( $wrap: nowrap, $dir: row ) {
+    display: flex;
+    @if( $wrap != 'nowrap' ) {
+        flex-wrap: $wrap;
+    }
+
+    @if( $dir != 'row' ) {
+        flex-direction: $dir;
+    }
+}
+
+@mixin flexItem( $grow: 1, $shrink: 0, $basis: auto, $basisType: null ) {
+    @if( $basisType == 'px' ) {
+        $basis: remCalc( $basisPx );
+    } @elseif( $basisType == '%' ) {
+        $basis: $basis + '%';
+    }
+
+    flex: $grow $shrink $basis;
+}

@@ -1,0 +1,33 @@
+.filter {
+
+    &-container {
+        padding: remCalc( 24 ) 0 remCalc( 40 );
+        border-top: remCalc( 6 ) solid $grayLight;
+    }
+
+    &__top {
+        align-items: center;
+        @include flex;
+    }
+
+    &-headline {
+        @include flexItem;
+    }
+
+    &-toggle {
+        $btnSize: 26;
+        width: remCalc( $btnSize );
+        height: remCalc( $btnSize );
+        text-align: center;
+        cursor: pointer;
+        @include btnGreen;
+
+        .icon {
+            &:before {
+                color: #fff;
+                font-size: remCalc( 14 );
+                line-height: remCalc( $btnSize );
+            }
+        }
+    }
+}

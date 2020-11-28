@@ -1,0 +1,114 @@
+.link {
+    margin-top: remCalc( 24 );
+    margin-bottom: remCalc( 32 );
+    align-items: center;
+    align-content: center;
+    
+    // transform: translateY( 25px );
+    // opacity: 0;
+    // visibility: hidden;
+
+    @include flex( wrap );
+    @include transitionSimple;
+
+    &:hover {
+        transform: translateX( remCalc( 2.5 ) );
+    }
+
+
+    &--active {
+        transform: translateY( 0 );
+        opacity: 1;
+        visibility: visible;
+    }
+
+    &--read {
+        font-style: oblique;
+        opacity: .5;
+        text-decoration: line-through;
+    }    
+    
+    &__url {
+        display: block;
+        width: 100%;
+        padding-top: remCalc( 16 );
+        padding-bottom: remCalc( 8 );        
+        border-bottom: remCalc( 3 ) solid $grayLight;
+        font-weight: $fontBold;
+        font-size: remCalc( 20 );
+        text-decoration: none;
+        word-break: break-all;
+        color: $grayText;
+        @include transitionSimple;
+
+        &:hover {
+            color: $greenLight;
+        }
+    }
+
+    &__meta {
+        width: 100%;
+        min-height: remCalc( 40 );
+        align-items: center;
+        align-content: center;
+        @include flex;
+    }
+
+    &__tags,
+    &__date,
+    &__btn {
+        height: 100%;
+        min-height: inherit;
+        align-items: center;
+        @include flex;
+    }
+
+    &__tag {
+        padding-right: remCalc( 5 );
+
+        &__headline {
+            margin-right: remCalc( 10 );
+            font-weight: $fontBold;
+        }
+
+        &-container {
+            @include flexItem;
+        }
+    }
+
+    &__date {
+        padding-left: remCalc( 16 );
+        padding-right: remCalc( 16 );
+        text-align: center;
+        font-weight: $fontBold;
+        @include flexItem( 0 );
+    }
+    
+    &__btn {
+        padding-left: remCalc( 16 );
+        padding-right: remCalc( 16 );
+        border-left: remCalc( 3 ) solid $grayLight;
+        background-color: white;
+        cursor: pointer;
+
+        .icon {
+            font-size: remCalc( 24 );
+            color: $teal;
+            @include transitionSimple;
+        }
+
+        &--read:hover,
+        &--completed {
+            .icon { 
+                color: $purple; 
+            }
+        }   
+        
+        &--favorite:hover,
+        &--favorited {
+            .icon { 
+                color: $red;
+            }
+        } 
+    }
+}

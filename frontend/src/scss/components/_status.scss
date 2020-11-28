@@ -1,0 +1,28 @@
+.status {
+	min-height: 52px;
+	margin-bottom: remCalc( 16 );
+	padding: remCalc( 16 ) remCalc( 20 );
+	font-weight: $fontBold;
+	font-size: remCalc( 18 );
+	color: white;
+	opacity: 0;
+	visibility: hidden;
+	@include transitionSimple;
+
+	&--error {
+		background-color: $red
+	}
+
+	&--working {
+		background-color: $yellow
+	}
+	
+	&--success {
+		background-color: $greenLight
+	}	
+
+	&--active {
+		opacity: 1;
+		visibility: visible;
+	}        
+}

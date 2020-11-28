@@ -1,0 +1,62 @@
+.tag {
+    position: relative;
+    display: inline-block;
+    height: remCalc( 32 );
+    margin: 0 remCalc( 20 ) remCalc( 12 ) 0;
+    padding: remCalc( 9 ) remCalc( 18 ) 0 remCalc( 14 );
+    font-size: remCalc( 12 );
+    background-color: $grayLight;
+    border-top-left-radius: remCalc( 10 );
+    border-bottom-left-radius: remCalc( 10 );
+    cursor: pointer;
+    @include transitionSimple;
+
+    &:before,
+    &:after {
+        content: '';
+        position: absolute;
+        display: block;
+    }
+    
+    &:before {
+        top: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: remCalc( 16 ) 0 remCalc( 16 ) remCalc( 16 );
+        border-color: transparent transparent transparent $grayLight;
+        transform: translateX( 100% );
+        @include transitionSimple;
+    }
+    
+    &:after {
+        top: 50%;
+        right: 0;
+        width: remCalc( 8 );
+        height: remCalc( 8 );
+        border-radius: 50%;
+        background-color: white;
+        transform: translateY( -50% );
+    }
+
+    &:hover,
+    &.tag--active {
+        color: white;
+        background-color: $purple;
+
+        &:before {
+            border-left-color: $purple;
+        }
+    }
+
+    &-headline {
+        margin: 0 0 remCalc( 10 );
+        font-weight: $fontBold;
+        font-size: remCalc( 18 );
+    }
+
+    &s-container {
+        padding-right: remCalc( 16 );
+    }
+}

@@ -1,0 +1,23 @@
+.loader {
+    position: fixed;
+    width: remCalc( 150 );
+    height: remCalc( 150 );
+    top: 50%;
+    left: 50%;
+    transform: translate( -50%, -50% );
+    border-width: remCalc( 5 );
+    border-style: solid;
+    border-color: $purple $grayLight;
+    border-radius: 50%;
+    z-index: 5000;
+    transition: opacity .5s linear;
+    animation: simpleSpin 1s infinite;
+
+    &.is-loaded {
+        opacity: 0;
+    }
+
+    &.is-finished {
+        display: none;
+    }
+}

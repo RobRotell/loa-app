@@ -1,0 +1,34 @@
+.inputter {
+    margin-bottom: remCalc( 36 );
+
+    &__input {
+        width: 100%;
+        height: remCalc( 75 );
+        margin-bottom: remCalc( 18 );
+        padding-left: remCalc( 50 );
+        padding-right: remCalc( 50 );
+        font-size: remCalc( 24 );
+        color: $grayText;
+        background-color: $grayLight;
+    }
+
+    &__submit {
+        margin-left: auto;
+        width: remCalc( 75 );
+        height: remCalc( 75 );
+        cursor: pointer;
+        @include btnGreen;
+        @include flexItem( 0 );
+
+        .icon {
+            &:before {
+                color: #fff;
+                font-size: remCalc( 36 );
+            }
+        }
+    }
+
+    &__bottom {
+        @include flex;
+    }
+}

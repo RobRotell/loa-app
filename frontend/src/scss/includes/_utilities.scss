@@ -1,0 +1,15 @@
+.hide { display: none; }
+.hide-hard { display: none !important; }
+
+.show { display: block; }
+.show-hard { display: block !important; }
+
+@keyframes simpleSpin {
+    0 {
+        transform: translate( -50%, -50% ) rotateZ( 0 );
+    }
+
+    100% {
+        transform: translate( -50%, -50% ) rotateZ( 360deg );
+    }
+}
