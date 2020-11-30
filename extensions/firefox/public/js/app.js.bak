@@ -1,0 +1,124 @@
+( function() {
+
+	const el 	= document.getElementById('popup'),
+		helper 	= new LoaHelper()
+
+	let app 
+
+	app = new Vue({
+		el: '#popup',
+		
+		data: 	{
+			articleUrl: 	window.location.href,
+			authKey: 		'',
+			isLoggedIn: 	false,
+			isLoggingIn: 	false,
+			loginError: 	false,
+			selectedTag: 	null,
+			articleTags: 	[
+				{
+					id: 	null,
+					name: 	'Loading tags &hellip;'
+				}
+			],
+		},
+
+		computed: {
+
+		},
+		
+		methods: {
+			handleSubmit( e ) {
+				console.log( e );
+				
+			},
+
+			handleLoginClick( e ) {
+				if( this.isLoggedIn ) {
+					return
+				}
+
+				if( this.isLoggingIn && this.authKey.length ) {
+					this.submitAuth()
+				} else {
+					this.authKey 		= ''
+					this.loginError 	= false
+					this.isLoggingIn 	= !this.isLoggingIn
+				}
+			},
+
+			handleLoginSubmit( e ) {
+				if( this.authKey.length ) {
+					this.submitAuth()
+				}
+			},
+
+			maybeClearLogin( e ) {
+				if( this.loginError ) {
+					this.authKey = ''
+					this.loginError = false
+				}
+			},
+
+			submitAuth() {
+				if( !this.authKey.length ) {
+					return
+				}
+
+				helper.sendAuth( this.authKey ).then( response => {
+					if( true === response ) {
+						this.authKey 		= ''
+						this.isLoggedIn 	= true
+						this.isLoggingIn 	= false
+						this.loginError 	= false
+						this.getTags()
+					}
+
+				}).catch( e => {
+					this.authKey 	= e
+					this.loginError = true
+
+					setTimeout( () => {
+						this.authKey 	= ''
+						this.loginError = false
+					}, 5000 )
+				})
+			},
+
+			getTags() {
+				helper.tags.then( items => {
+					const tags = []
+
+					for( let id in items ) {
+						tags.push({
+							id: 	parseInt( id ),
+							name: 	items[id]
+						})
+					}
+
+					this.articleTags = tags
+
+				}).catch( e => {
+					this.articleTags = [
+						{
+							id: 	null,
+							name: 	e.toString()
+						}
+					]
+				})
+			},
+			
+			checkIfLoggedIn() {
+				helper.token.then( token => {
+					this.isLoggedIn = ( 'string' === typeof( token ) && token.length )
+				})
+			}
+		},
+
+		mounted() {
+			this.checkIfLoggedIn()
+			this.getTags()
+		},
+	})	
+
+}) ()
