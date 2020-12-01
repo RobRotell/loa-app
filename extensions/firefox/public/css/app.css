@@ -57,6 +57,14 @@ button {
 	transition: background-color .2s;
 }
 
+.form__input.is-error {
+	border-color: var(--red);
+}
+
+.form__input.is-success {
+	border-color: var(--green);
+}
+
 .form__input:focus,
 .form__input:active,
 .form__tags:focus,
@@ -70,7 +78,19 @@ button {
 	margin: 0 12px 0 0;
 }
 
+.form__tags option {
+	color: black;
+}
+
+.form__tags option:selected,
+.form__tags option:highlighted,
+.form__tags option:active,
+.form__tags option:focus {
+	color: red;
+}
+
 .form__submit {
+	position: relative;
 	display: block;
 	align-self: flex-end;
 	padding: 12px;
@@ -80,12 +100,95 @@ button {
 	background-color: var(--green);
 }
 
+.form__submit.is-error {
+	background-color: var(--red);
+	pointer-events: none;
+}
+
+.form__submit.is-submitting {
+	background-color: var(--purple);
+	pointer-events: none;
+}
+
 .form__submit:hover {
 	background-color: var(--greenLight);
 }
 
 .icon {
 	font-style: normal;
+}
+
+.icon--submit:before,
+.icon--submit:after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	display: block;
+	width: 15px;
+	height: 2px;
+	background-color: white;
+	transition: .25s;
+	border: 0px solid white;
+}
+
+.icon--submit:before {
+	transform: translate(-50%, -50%);
+}
+
+.icon--submit:after {
+	transform: translate(-50%, -50%) rotateZ(-90deg);
+}
+
+.form__submit.is-error .icon--submit:before {
+	transform: translate(-50%, -50%) rotateZ(45deg);
+}
+
+.form__submit.is-error .icon--submit:after {
+	transform: translate(-50%, -50%) rotateZ(-45deg);
+}
+
+.form__submit.is-submitting .icon--submit:before,
+.form__submit.is-submitting .icon--submit:after {
+	height: 15px;
+	border: 2px solid transparent;
+	border-radius: 50%;
+	background-color: transparent;
+	animation: 1s simpleSpin infinite;
+}
+
+.form__submit.is-submitting .icon--submit:before {
+	border-top-color: white;
+	transform: translate(-50%, -50%);
+}
+
+.form__submit.is-submitting .icon--submit:after {
+	border-bottom-color: white;
+	transform: translate(-50%, -50%);
+}
+
+.form__submit.is-success .icon--submit:before {
+	left: calc( 50% - 3px);
+	top: calc( 50% + 2px);
+	width: 8px;
+	transform: translate( -50%, -50% ) rotateZ( 45deg );
+}
+
+.form__submit.is-success .icon--submit:after {
+	left: calc( 50% + 5px);
+	transform: translate( -50%, -50% ) rotateZ( -45deg );
+}
+
+.icon--submit:before,
+.icon--submit:after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	display: block;
+	width: 15px;
+	height: 2px;
+	background-color: white;
 }
 
 .form__submit .icon {
@@ -107,8 +210,7 @@ button {
 	font-size: 14px;
 	line-height: 40px;
 	border-radius: 6px;
-	color: var(--gray);
-	background-color: var(--grayLight);
+	background-color: var(--teal);
 }
 
 .bottom__loa:hover {
@@ -158,7 +260,7 @@ button {
 	position: absolute;
 	top: 0;
 	right: 45px;
-	display: none;	
+	display: none;
 	width: 140px;
 	height: 40px;
 	padding: 9.6px 14.4px;
@@ -174,4 +276,15 @@ button {
 
 .login__input.is-error {
 	border-color: var(--red);
+}
+
+
+@keyframes simpleSpin {
+	0% {
+		transform: translate(-50%, -50%) rotateZ(0);
+	}
+
+	100% {
+		transform: translate(-50%, -50%) rotateZ(360deg);
+	}
 }
