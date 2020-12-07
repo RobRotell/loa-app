@@ -41,6 +41,9 @@ var Loa = ( ( Loa ) => {
 		elLoginBtn: 	null,
 		elAuthInput:	null,
 
+		// for errors, successes, warnings
+		elNotice: 		null,
+
 		// event flags
 		isSubmitting: 	false,
 
@@ -53,6 +56,9 @@ var Loa = ( ( Loa ) => {
 
 				this.elLoginBtn 	= this.el.querySelector('.js-login-btn')
 				this.elAuthInput 	= this.el.querySelector('.js-login-auth')
+
+				this.elNotice 		= this.el.querySelector('.js-notice')
+
 
 				// use current tab's URL as input value
 				browser.tabs
@@ -169,10 +175,12 @@ var Loa = ( ( Loa ) => {
 		},
 
 
-		submitAuthKey( authKey = '' ) {
+		async submitAuthKey( authKey = '' ) {
 			if( !authKey.length ) {
 				return
 			}
+
+			const response = Loa.Background.sendAuth( authKey )
 
 			Loa.Background.sendAuth( authKey )
 				.then( response => {
@@ -230,58 +238,78 @@ var Loa = ( ( Loa ) => {
 
 
 		async init() {
-			try {
-				// check if token is saved locally
-				let token = await browser.storage.local
-					.get( this.storageKeyToken )
-					.then( result => {
-						if( 'object' === typeof( result ) && result.hasOwnProperty( this.storageKeyToken ) ) {
-							return result[ this.storageKeyToken ]
-						}
-					})
 
-				if( undefined === token ) {
-					throw 'No token saved locally'
-	
-				// if local token, confirm that token is still valid
+			// check if token is saved locally
+			const token = await this.getTokenFromStorage()
+
+			if( !token ) {
+				console.warn( 'No token saved locally' )
+
+			// if local token, confirm that token is still valid
+			} else {
+				const isValid = await this.validateToken( token )
+
+				if( isValid ) {
+					this.token = token
+					this.isLoggedIn = true
+
+					Loa.Forefront.triggerIsLoggedIn()
+
+				// clear local token to avoid running again
 				} else {
-					const params = new URLSearchParams()
-					params.append( 'token', token )
-	
-					fetch( `${this.endpoint}/check-auth-token?${params.toString()}` )
-						.then( response => response.json() )
-						.then( response => {
-	
-							// if endpoint returns true, then token is valid
-							if( true === response ) {
-								this.token = token
-								this.isLoggedIn = true
-
-								// update frontend
-								Loa.Forefront.triggerIsLoggedIn()
-	
-							} else {
-								// clear local token to avoid running again
-								browser.storage.local.remove( this.storageKeyToken )
-
-								if( 'object' === typeof( response ) ) {
-									const { message } = response
-									throw message.length ? message : 'Unknown error validating token'
-
-								} else {
-									throw 'Failed to validate token'
-								}
-							}
-						})
+					browser.storage.local.remove( this.storageKeyToken )
 				}
-
-			} catch( e ) {
-				console.warn( e )
 			}
 		},
 
 
-		sendAuth( authKey = '' ) {
+		getTokenFromStorage() {
+			return browser.storage.local
+				.get( this.storageKeyToken )
+				.then( result => {
+					if( 'object' === typeof result && result.hasOwnProperty( this.storageKeyToken ) ) {
+						result = result[ this.storageKeyToken ]
+
+						const { token, expire } = result
+	
+						if( undefined !== token && !isNaN( expire ) ) {
+							const now = Date.now()
+	
+							if( now < expire ) {
+								return token
+							}
+						}
+					}
+ 
+					return false
+				})
+		},
+
+
+		validateToken( token = '' ) {
+			if( 'string' !== typeof token || !token.length ) {
+				return false
+			} else {
+				const params = new URLSearchParams()
+
+				params.append( 'token', token )
+
+				return fetch( `${this.endpoint}/check-auth-token?${params.toString()}` )
+					.then( response => response.json() )
+					.then( response => {
+						const { valid } = response
+
+						if( '1' === valid ) {
+							return true
+						}
+
+						return false
+					})
+			}
+		},
+
+
+		async sendAuth( authKey = '' ) {
 
 			// if we're already logged in, just send true
 			if( this.isLoggedIn ) {
@@ -293,33 +321,35 @@ var Loa = ( ( Loa ) => {
 				return false
 			}
 
-			return new Promise( ( resolve, reject ) => {
-				const params = new URLSearchParams()
-				params.append( 'key', authKey )
+			const params = new URLSearchParams()
+			params.append( 'auth_key', authKey )
 
-				fetch( `${this.endpoint}/get-auth-token`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded'
-					},
-					body: params.toString()
-				})
-					.then( response => response.json() )
-					.then( response => {
-						if( 'string' !== typeof( response ) ) {
-							let error = 'Failed to obtain token'
-
-							if( 'object' === typeof( response ) && response.hasOwnProperty( 'message' ) ) {
-								error = response.message
-							}
-
-							reject( error )
-
-						} else {
-							this.saveTokenToStorage( response ).then( () => resolve( true ) )
-						}
-					})
+			return fetch( `${this.endpoint}/get-auth-token`, {
+				body: 		params.toString(),
+				method: 	'POST',
+				headers: 	{
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
 			})
+				.then( response => response.json() )
+				.then( response => {
+					const { token, success } = response
+
+					if( true === success && 'string' === typeof token && token.length ) {
+						this.saveTokenToStorage( token )
+						return true
+
+					} else {
+						const { error, message } = response
+
+						if( true === error && 'string' === typeof message && message.length ) {
+							return message
+						} else {
+							console.warn( response )
+							return 'Failed to obtain token'
+						}
+					}
+				})
 		},
 
 
@@ -332,7 +362,10 @@ var Loa = ( ( Loa ) => {
 
 			// save to browser storage
 			let data = {}
-			data[ this.storageKeyToken ] = token
+			data[ this.storageKeyToken ] = {
+				token: 	token,
+				expire: 604800 + Date.now()
+			}
 
 			return browser.storage.local.set( data )
 		},
