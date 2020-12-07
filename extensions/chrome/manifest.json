@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Loa",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"description": "Adds browser support for Loa integration",
 	"icons": {
 		"48": "public/img/icon-48.png",
@@ -17,11 +17,5 @@
 		"default_icon": "public/img/icon-48.png",
 		"default_title": "Loa",
 		"default_popup": "public/popup.html"
-	},
-	"browser_specific_settings": {
-		"gecko": {
-			"id": "{9e6cc227-113f-4fe2-8ebc-42a297ed5a9e}",
-			"strict_min_version": "83.0"
-		}
 	}
 }
