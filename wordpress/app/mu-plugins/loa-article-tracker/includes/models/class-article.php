@@ -10,36 +10,46 @@ defined( 'ABSPATH' ) || exit;
 
 class Article
 {
-    private $id;
+    private $id             = null;
 
-    private $url;
-    private $title;
+    private $url            = '';
+    private $title          = '';
 
-    private $date_added;
-    private $date_read;
-    private $is_favorite = false;
+    private $date_added     = null;
+    private $date_read      = null;
+    private $is_favorite    = false;
     
     private $tags = [];
 
 
-    public function __construct( WP_Post $post )
+    public function __construct( $arg )
     {
-        if( Core::POSTTYPE !== $post->post_type ) {
+        if( is_numeric( $arg ) ) {
+            $arg = absint( $arg );
+            $arg = get_post( $arg );
+        }
+
+        if( !is_a( $arg, 'WP_Post' ) ) {
+            return null;
+        }
+
+        if( Core::POSTTYPE !== $arg->post_type ) {
             return;
         }
         
-        $this->id       = $post->ID;
-        $this->title    = $post->post_title;
+        $this->id = $arg->ID;
+        $this->title = $arg->post_title;
 
-        $this->set_attributes();
+        $this->set_atts();
 
         return $this;
     }
 
 
-    private function set_attributes()
+    private function set_atts()
     {
         $this->url          = esc_url_raw( get_field( 'article_url', $this->id ) );
+        $this->is_read      = get_field( 'article_is_read', $this->id );
         $this->is_favorite  = get_field( 'article_is_favorite', $this->id );
 
         if( 'Article' === $this->title ) {
@@ -76,7 +86,7 @@ class Article
     }
 
 
-    public function get()
+    public function get_atts()
     {
         return get_object_vars( $this );
     }

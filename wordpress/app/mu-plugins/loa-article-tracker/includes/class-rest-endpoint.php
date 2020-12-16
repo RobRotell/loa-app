@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 class Rest_Endpoint
 {
 	public $auth;
-	public $transient = 'loa_cached_everything';
+	public $transient = 'loa_cached_everything2';
 		
 	protected static $_instance = null;
 	public static function _instance()
@@ -28,6 +28,8 @@ class Rest_Endpoint
 
 	public function __construct()
 	{
+		require_once( LoaArticleTracker()->plugin_inc_path . '/models/class-article.php' );
+
 		$this->auth = md5( LOA_AUTH );
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
 	}
@@ -182,7 +184,8 @@ class Rest_Endpoint
 
 		$articles = [];
 		foreach( $posts as $post ) {
-			$article = new Article( $post->ID );
+			// $article = new Article( $post->ID );
+			$article = new Article( $post );
 
 			// if( $article->is_unread() )
 				$articles[] = $article->get();
@@ -311,7 +314,7 @@ class Rest_Endpoint
 			delete_transient( $this->transient );
 
 			// return article (to append to articles)
-			$article = new Article( $article_id );
+			$article = new Article( get_post( $article_id ) );
 			return wp_send_json_success( $article->get() );
 
 		// encounter an error?

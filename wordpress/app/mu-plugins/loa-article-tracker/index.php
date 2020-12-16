@@ -11,7 +11,7 @@
  * Text Domain: loa
  */
 
-namespace Loa_Article_Tracker; 
+// namespace Loa_Article_Tracker; 
 
 
 defined( 'ABSPATH' ) || exit;
@@ -21,7 +21,7 @@ class ArticleTracker
 {
 	public $plugin_path     = false;
     public $plugin_inc_path = false;
-	public $plugin_url = false;
+	public $plugin_url      = false;
 
     // plugin classes
     public $core        = null;
@@ -30,14 +30,14 @@ class ArticleTracker
 	public $helpers 	= null;
 
 
-	protected static $instance = null;
-	public static function instance()
+	protected static $_instance = null;
+	public static function _instance()
 	{
-		if( !isset( self::$instance ) ) {
+		if( !isset( self::$_instance ) ) {
 			$class_name = __CLASS__;
-			self::$instance = new $class_name;
+			self::$_instance = new $class_name;
 		}
-		return self::$instance;
+		return self::$_instance;
     }
     
 
@@ -61,7 +61,8 @@ class ArticleTracker
         $classes = [
 			'helpers',
             'core',
-			'admin',
+            'admin',
+            'response', // v2
 			'endpoint', // v2
 			'rest-endpoint', // v1
         ];
@@ -70,18 +71,16 @@ class ArticleTracker
             require_once( sprintf( '%s/class-%s.php', $this->plugin_inc_path, $class ) );
         }
 
-		$this->helpers 	= new Helpers();
-        $this->core     = new Core();
-		$this->admin    = new Admin();
-		$this->endpoint = new Endpoint(); // v2
-		
-		$this->rest_endpoint = new Rest_Endpoint(); // v1
+		$this->helpers 	= new Loa_Article_Tracker\Helpers();
+        $this->core     = new Loa_Article_Tracker\Core();
+		$this->admin    = new Loa_Article_Tracker\Admin();
+		$this->endpoint = new Loa_Article_Tracker\Endpoint(); // v2
     }
 }
 
 
 function LoaArticleTracker() {
-    return ArticleTracker::instance();
+    return ArticleTracker::_instance();
 }
 
 
