@@ -7,6 +7,7 @@ var Loa = ( ( Loa ) => {
 	})
 	
 
+
 	Loa.Forefront = {
 		el: document.getElementById('loa_popup'),
 
@@ -18,6 +19,9 @@ var Loa = ( ( Loa ) => {
 		// login elements
 		elLoginBtn: 	null,
 		elAuthInput:	null,
+
+		// for errors, successes, warnings
+		elNotice: 		null,
 
 		// event flags
 		isSubmitting: 	false,
@@ -32,13 +36,16 @@ var Loa = ( ( Loa ) => {
 				this.elLoginBtn 	= this.el.querySelector('.js-login-btn')
 				this.elAuthInput 	= this.el.querySelector('.js-login-auth')
 
+				this.elNotice 		= this.el.querySelector('.js-notice')
+
+
 				// use current tab's URL as input value
 				chrome.tabs
 					.query({
 						active: true, 
 						lastFocusedWindow: true
 					}, tabs => this.elUrlInput.value = tabs[0].url )
-					
+				
 				this.bind()
 			}
 		},
@@ -55,10 +62,12 @@ var Loa = ( ( Loa ) => {
 		resetUrlStates() {
 			this.elUrlInput.classList.remove('is-error', 'is-success')
 			this.elSubmitBtn.classList.remove('is-error', 'is-success')
+
+			this.showMessage( null, null, false )
 		},
 
 
-		handleUrlSubmit( e ) {
+		async handleUrlSubmit( e ) {
 			const url 	= this.elUrlInput.value,
 				tag 	= this.elTagSelect.value
 
@@ -82,6 +91,7 @@ var Loa = ( ( Loa ) => {
 			if( !urlRegex.test( url ) ) {
 				this.elUrlInput.classList.add('is-error')
 				this.elSubmitBtn.classList.add('is-error')
+				this.showMessage( 'Invalid URL!', 'error' )
 				return
 			}
 
@@ -93,19 +103,29 @@ var Loa = ( ( Loa ) => {
 
 			// at this point, good to send to API
 			this.elSubmitBtn.classList.add('is-submitting')
-			Loa.Background.addArticle( url, tag )
-				.then( () => {
-					this.elSubmitBtn.classList.remove('is-submitting')
-					this.elSubmitBtn.classList.add('is-success')
 
-					this.elUrlInput.classList.add('is-success')
-					this.isSubmitting = false
-				}).catch( e => {
-					console.warn( e )
-					this.elSubmitBtn.classList.remove('is-submitting')
-					this.elUrlInput.classList.add('is-error')
-					this.isSubmitting = false
-				})
+			const result = await Loa.Background.addArticle( url, tag )
+
+			if( true === result ) {
+				this.elSubmitBtn.classList.remove('is-submitting')
+				this.elSubmitBtn.classList.add('is-success')
+				this.elUrlInput.classList.add('is-success')
+				this.isSubmitting = false
+	
+				this.showMessage( 'Successfully added article!', 'success' )
+
+			} else {
+				console.warn( result )
+				this.elSubmitBtn.classList.remove('is-submitting')
+				this.elUrlInput.classList.add('is-error')
+				this.isSubmitting = false
+
+				if( 'string' !== result ) {
+					result = 'Failed to add article!'
+				}
+	
+				this.showMessage( result, 'error' )
+			}
 		},
 
 
@@ -113,6 +133,8 @@ var Loa = ( ( Loa ) => {
 			const input 	= this.elAuthInput,
 				isVisible 	= input.classList.contains('is-active'),
 				authKey 	= input.value
+
+			this.showMessage()
 
 			if( Loa.Background.isLoggedIn ) {
 				this.triggerIsLoggedIn()
@@ -127,7 +149,10 @@ var Loa = ( ( Loa ) => {
 
 
 		hintLogin() {
+			this.elLoginBtn.classList.add('is-wiggling')
+			setTimeout( () => this.elLoginBtn.classList.remove('is-wiggling'), 2000 )
 
+			this.showMessage( 'Log into app first!', 'warning' )
 		},
 
 
@@ -143,22 +168,23 @@ var Loa = ( ( Loa ) => {
 		},
 
 
-		submitAuthKey( authKey = '' ) {
+		async submitAuthKey( authKey = '' ) {
 			if( !authKey.length ) {
 				return
 			}
 
-			Loa.Background.sendAuth( authKey )
-				.then( response => {
-					if( true !== response ) {
-						throw 'Invalid response from endpoint'
-					} else {
-						this.triggerIsLoggedIn()
-					}
-				}).catch( e => {
-					console.warn( e )
+			const response = await Loa.Background.sendAuth( authKey )
+
+			if( true !== response ) {
+				if( 'string' === typeof response ) {
+					console.warn( response )
+					this.showMessage( response, 'error' )
 					this.elAuthInput.classList.add('is-error')
-				})
+				}
+			} else {
+				this.showMessage( 'Successfully logged in!', 'success' )
+				this.triggerIsLoggedIn()
+			}
 		},
 
 
@@ -168,6 +194,7 @@ var Loa = ( ( Loa ) => {
 			this.elLoginBtn.classList.add('is-logged-in')
 
 			const tags = await Loa.Background.getTags()
+
 			this.loadTags( tags )
 		},
 
@@ -185,9 +212,23 @@ var Loa = ( ( Loa ) => {
 
 				this.elTagSelect.append( option )
 			})
+		},
+
+
+		showMessage( msg = '', status = '', autoHide = false ) {
+			this.elNotice.innerText = msg
+
+			this.elNotice.classList.toggle( 'is-success', 'success' === status )
+			this.elNotice.classList.toggle( 'is-warning', 'warning' === status )
+			this.elNotice.classList.toggle( 'is-error', 'error' === status )
+
+			if( true === autoHide ) {
+				setTimeout( () => {
+					this.elNotice.innerText = ''
+					this.elNotice.classList.remove( 'is-success', 'is-warning', 'is-error' )
+				}, 6000 )
+			}
 		}
-
-
 
 	}
 
@@ -204,53 +245,72 @@ var Loa = ( ( Loa ) => {
 
 
 		async init() {
-			try {
-				// check if token is saved locally
-				let token = await chrome.storage.local
-					.get( this.storageKeyToken )
-					.then( result => {
-						if( 'object' === typeof( result ) && result.hasOwnProperty( this.storageKeyToken ) ) {
-							return result[ this.storageKeyToken ]
-						}
-					})
 
-				if( undefined === token ) {
-					throw 'No token saved locally'
-	
-				// if local token, confirm that token is still valid
+			// check if token is saved locally
+			const token = await this.getTokenFromStorage()
+
+			if( !token ) {
+				console.warn( 'No token saved locally' )
+
+			// if local token, confirm that token is still valid
+			} else {
+				const isValid = await this.validateToken( token )
+
+				if( isValid ) {
+					this.token = token
+					this.isLoggedIn = true
+
+					Loa.Forefront.triggerIsLoggedIn()
+
+				// clear local token to avoid running again
 				} else {
-					const params = new URLSearchParams()
-					params.append( 'token', token )
-	
-					fetch( `${this.endpoint}/check-auth-token?${params.toString()}` )
-						.then( response => response.json() )
-						.then( response => {
-	
-							// if endpoint returns true, then token is valid
-							if( true === response ) {
-								this.token = token
-								this.isLoggedIn = true
+					chrome.storage.local.remove( this.storageKeyToken )
+				}
+			}
+		},
 
-								// update frontend
-								Loa.Forefront.triggerIsLoggedIn()
-	
-							} else {
-								// clear local token to avoid running again
-								chrome.storage.local.remove( this.storageKeyToken )
 
-								if( 'object' === typeof( response ) ) {
-									const { message } = response
-									throw message.length ? message : 'Unknown error validating token'
+		getTokenFromStorage() {
+			return new Promise( ( resolve, reject ) => {
+				chrome.storage.local
+					.get( this.storageKeyToken, result => {
+						if( 'object' === typeof result && result.hasOwnProperty( this.storageKeyToken ) ) {
+							result = result[ this.storageKeyToken ]
 
-								} else {
-									throw 'Failed to validate token'
+							const { token, expire } = result
+		
+							if( undefined !== token && !isNaN( expire ) ) {
+								if( !this.checkIfExpired( expire ) ) {
+									resolve( token )
 								}
 							}
-						})
-				}
+						}
+	
+						resolve( false )
+					})
+			})
+		},
 
-			} catch( e ) {
-				console.warn( e )
+
+		validateToken( token = '' ) {
+			if( 'string' !== typeof token || !token.length ) {
+				return false
+			} else {
+				const params = new URLSearchParams()
+
+				params.append( 'token', token )
+
+				return fetch( `${this.endpoint}/check-auth-token?${params.toString()}` )
+					.then( response => response.json() )
+					.then( response => {
+						const { valid } = response
+
+						if( '1' === valid ) {
+							return true
+						}
+
+						return false
+					})
 			}
 		},
 
@@ -267,33 +327,35 @@ var Loa = ( ( Loa ) => {
 				return false
 			}
 
-			return new Promise( ( resolve, reject ) => {
-				const params = new URLSearchParams()
-				params.append( 'auth_key', authKey )
+			const params = new URLSearchParams()
+			params.append( 'auth_key', authKey )
 
-				fetch( `${this.endpoint}/get-auth-token`, {
-					body: params.toString(),
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded'
-					},
-				})
-					.then( response => response.json() )
-					.then( response => {
-						if( 'string' !== typeof( response ) ) {
-							let error = 'Failed to obtain token'
-
-							if( 'object' === typeof( response ) && response.hasOwnProperty( 'message' ) ) {
-								error = response.message
-							}
-
-							reject( error )
-
-						} else {
-							this.saveTokenToStorage( response ).then( () => resolve( true ) )
-						}
-					})
+			return fetch( `${this.endpoint}/get-auth-token`, {
+				body: 		params.toString(),
+				method: 	'POST',
+				headers: 	{
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
 			})
+				.then( response => response.json() )
+				.then( response => {
+					const { token, success } = response
+
+					if( true === success && 'string' === typeof token && token.length ) {
+						this.saveTokenToStorage( token )
+						return true
+
+					} else {
+						const { error, message } = response
+
+						if( true === error && 'string' === typeof message && message.length ) {
+							return message
+						} else {
+							console.warn( response )
+							return 'Failed to obtain token'
+						}
+					}
+				})
 		},
 
 
@@ -304,9 +366,12 @@ var Loa = ( ( Loa ) => {
 
 			this.token = token
 
-			// save to chrome storage
+			// save to browser storage
 			let data = {}
-			data[ this.storageKeyToken ] = token
+			data[ this.storageKeyToken ] = {
+				token: 	token,
+				expire: this.getExpireTime()
+			}
 
 			return chrome.storage.local.set( data )
 		},
@@ -318,6 +383,8 @@ var Loa = ( ( Loa ) => {
 			// try to fetch tags from local storage
 			tags = await this.getTagsFromStorage()
 
+			chrome.storage.local.remove( this.storageKeyTags )
+
 			// if no tags (or they're not an array), fetch tags from endpoint
 			if( !Array.isArray( tags ) && this.token.length ) {
 				const params = new URLSearchParams()
@@ -326,17 +393,21 @@ var Loa = ( ( Loa ) => {
 				tags = fetch( `${this.endpoint}/get-tags?${params.toString()}` )
 					.then( response => response.json() )
 					.then( response => {
-						const tags = []
-	
-						for( let id in response ) {
-							tags.push({
-								id: 	parseInt( id ),
-								name: 	response[ id ]
-							})
-						}
+						const { tags, success } = response
 
-						this.saveTagsToStorage( tags )
-						return tags
+						if( true === success && 'object' === typeof tags ) {
+							const tagsForDisplay = []
+
+							for( let id in tags ) {
+								tagsForDisplay.push({
+									id: 	parseInt( id ),
+									name: 	tags[ id ]
+								})
+							}
+	
+							this.saveTagsToStorage( tagsForDisplay )
+							return tagsForDisplay
+						} 
 					})
 			}
 
@@ -345,70 +416,95 @@ var Loa = ( ( Loa ) => {
 
 
 		getTagsFromStorage() {
-			if( null === this.token ) {
-				return false
-			}
+			return new Promise( ( resolve, reject ) => {
+				if( !this.isLoggedIn ) {
+					resolve( false )
+				}
 
-			return chrome.storage.local
-				.get( this.storageKeyTags )
-				.then( result => {
-					if( 'object' === typeof( result ) && result.hasOwnProperty( this.storageKeyTags ) ) {
-						return result[ this.storageKeyTags ]
-					}
-				})
+				chrome.storage.local
+					.get( this.storageKeyTags, result => {
+						if( 'object' === typeof result && result.hasOwnProperty( this.storageKeyTags ) ) {
+							result = result[ this.storageKeyTags ]
+	
+							const { tags, expire } = result
+	
+							if( undefined !== tags && !isNaN( expire ) ) {
+								if( !this.checkIfExpired( expire ) ) {
+									resolve( tags )
+								}
+							}
+						} 
+	
+						resolve( false )
+					})
+			})
+
 		},
 
 
 		saveTagsToStorage( tags = [] ) {
 			let data = {}
-			data[ this.storageKeyTags ] = tags
+
+			data[ this.storageKeyTags ] = {
+				tags: tags,
+				expire: this.getExpireTime()
+			}
 
 			return chrome.storage.local.set( data )			
 		},
 
 
+		getExpireTime() {
+			return 604800 + Date.now()
+		},
+
+
+		checkIfExpired( timeToCheck ) {
+			return ( timeToCheck < Date.now() )
+		},
+
+
 		addArticle( url, tag ) {
-			return new Promise( async ( resolve, reject ) => {
-				try {
-					if( 'string' !== typeof( url ) || !url.length ) {
-						throw 'Invalid URL'
-					}
+			if( 'string' !== typeof url || !url.length ) {
+				return 'Invalid URL!'
+			}
 
-					const params = new URLSearchParams()
-					params.append( 'token', this.token )
-					params.append( 'url', url )
+			const params = new URLSearchParams()
+			params.append( 'token', this.token )
+			params.append( 'url', url )
 
-					if( 'string' === typeof( tag ) && tag.length ) {
-						tag = parseInt( tag )
+			console.log( url )
 
-						if( !isNaN( tag ) ) {
-							params.append( 'tags', parseInt( tag ) )
+			if( 'string' === typeof tag && tag.length ) {
+				tag = parseInt( tag )
+
+				if( !isNaN( tag ) ) {
+					params.append( 'tags', parseInt( tag ) )
+				}
+			}
+
+			return fetch( `${this.endpoint}/add-article`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
+				body: params.toString()
+			})
+				.then( response => response.json() )
+				.then( response => {
+					const { success } = response
+
+					if( true === success ) {
+						return true 
+					} else {
+						const { error } = response
+
+						if( 'string' === typeof( error ) && error.length ) {
+							return error
+						} else {
+							return 'Failed to add article!'
 						}
 					}
-
-					await fetch( `${this.endpoint}/add-article`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/x-www-form-urlencoded'
-						},
-						body: params.toString()
-					})
-						.then( response => response.json() )
-						.then( response => {
-							if( 'number' !== typeof( response ) ) {
-								if( response.message ) {
-									throw response.message
-								} else {
-									throw 'Failed to add article'
-								}
-							} else {
-								resolve( response )
-							}
-					})
-
-				} catch( e ) {
-					reject( e )
-				}
 			})
 		}
 

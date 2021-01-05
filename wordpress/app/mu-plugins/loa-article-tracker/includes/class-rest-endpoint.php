@@ -121,16 +121,16 @@ class Rest_Endpoint
 	 */
 	public function get_everything()
 	{
-		$result = get_transient( $this->transient );
-		if( empty( $result ) ) {
+		// $result = get_transient( $this->transient );
+		// if( empty( $result ) ) {
 			$result = [
 				'tags' 		=> $this->get_tags(),
 				'articles'	=> $this->get_articles(),
 				'totalRead'	=> $this->get_total_read()
 			];
 
-			set_transient( $this->transient, $result, 1800 );
-		}
+			// set_transient( $this->transient, $result, 1800 );
+		// }
 
 		wp_send_json( $result );
 	}
@@ -188,7 +188,7 @@ class Rest_Endpoint
 			$article = new Article( $post );
 
 			// if( $article->is_unread() )
-				$articles[] = $article->get();
+				$articles[] = $article->get_atts();
 		}
 
 		return $articles;

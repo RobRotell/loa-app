@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Loa",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Adds browser support for Loa integration",
 	"icons": {
 		"48": "public/img/icon-48.png",
